@@ -1,91 +1,152 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
 
-const EmailOutput = ({ emailText, onClear, onSave }) => {
-  const [savedEmails, setSavedEmails] = useState(
-    JSON.parse(localStorage.getItem("savedEmails")) || []
-  );
+const EmailOutput = () => {
+  const [tone, setTone] = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [generatedEmail, setGeneratedEmail] = useState('');
+  const [savedEmails, setSavedEmails] = useState([]);
+  const [editIndex, setEditIndex] = useState(null);
+  const [editContent, setEditContent] = useState('');
+
+  useEffect(() => {
+    const storedEmails = JSON.parse(localStorage.getItem('savedEmails')) || [];
+    setSavedEmails(storedEmails);
+  }, []);
+
+  const handleGenerate = () => {
+    const email = `Tone: ${tone}\nPrompt: ${prompt}\n\nDear User,\n\nThis is an AI-generated email based on the provided prompt.`;
+    setGeneratedEmail(email);
+  };
 
   const handleSave = () => {
-    if (!emailText.trim()) return;
-    const updatedEmails = [...savedEmails, emailText];
+    if (!generatedEmail.trim()) return;
+    const updatedEmails = [...savedEmails, generatedEmail];
     setSavedEmails(updatedEmails);
-    localStorage.setItem("savedEmails", JSON.stringify(updatedEmails));
-    if (onSave) onSave(emailText);
+    localStorage.setItem('savedEmails', JSON.stringify(updatedEmails));
+    setGeneratedEmail('');
   };
 
   const handleDelete = (index) => {
-    const updatedEmails = savedEmails.filter((_, i) => i !== index);
+    const updatedEmails = [...savedEmails];
+    updatedEmails.splice(index, 1);
     setSavedEmails(updatedEmails);
-    localStorage.setItem("savedEmails", JSON.stringify(updatedEmails));
+    localStorage.setItem('savedEmails', JSON.stringify(updatedEmails));
   };
 
-  const handleExportPDF = (email, index) => {
-    const element = document.createElement("a");
-    const file = new Blob([email], { type: "application/pdf" });
+  const handleEdit = (index) => {
+    setEditIndex(index);
+    setEditContent(savedEmails[index]);
+  };
+
+  const handleSaveEdit = (index) => {
+    const updatedEmails = [...savedEmails];
+    updatedEmails[index] = editContent;
+    setSavedEmails(updatedEmails);
+    localStorage.setItem('savedEmails', JSON.stringify(updatedEmails));
+    setEditIndex(null);
+    setEditContent('');
+  };
+
+  const handleExportPDF = (emailContent) => {
+    const element = document.createElement('a');
+    const file = new Blob([emailContent], { type: 'application/pdf' });
     element.href = URL.createObjectURL(file);
-    element.download = `email_${index + 1}.pdf`;
+    element.download = 'email.pdf';
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
   };
 
-  return (
-    <div className="w-full p-4">
-      {/* Generated Email Output Section */}
-      <div className="bg-white rounded-2xl shadow-md p-6 mb-6 border border-gray-200">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Generated Email</h2>
-        <div className="min-h-[150px] whitespace-pre-wrap text-gray-700 bg-gray-100 rounded-xl p-4 border border-gray-300">
-          {emailText || "Your generated email will appear here..."}
-        </div>
+  const handleClear = () => {
+    setTone('');
+    setPrompt('');
+    setGeneratedEmail('');
+  };
 
-        <div className="flex flex-wrap gap-3 mt-4">
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
-          >
-            Save
-          </button>
-          <button
-            onClick={onClear}
-            className="px-4 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition"
-          >
-            Clear
-          </button>
-        </div>
+  return (
+    <div className="p-6 space-y-6 max-w-5xl mx-auto">
+      {/* Input Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input
+          type="text"
+          placeholder="Enter tone (e.g., Formal)"
+          className="p-3 border border-gray-300 rounded-xl w-full"
+          value={tone}
+          onChange={(e) => setTone(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Enter prompt"
+          className="p-3 border border-gray-300 rounded-xl w-full"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+        />
       </div>
 
-      {/* Saved Emails Section */}
-      <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Saved Emails</h2>
+      {/* Buttons */}
+      <div className="flex flex-wrap gap-4">
+        <button onClick={handleGenerate} className="px-4 py-2 bg-green-600 text-white rounded-xl">Generate</button>
+        <button onClick={handleSave} className="px-4 py-2 bg-gray-700 text-white rounded-xl">Save</button>
+        <button onClick={handleClear} className="px-4 py-2 bg-red-500 text-white rounded-xl">Clear</button>
+      </div>
 
-        {savedEmails.length === 0 ? (
-          <p className="text-gray-500">No saved emails yet.</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {savedEmails.map((email, index) => (
-              <div
-                key={index}
-                className="bg-gray-50 border border-gray-300 rounded-xl p-4 relative"
-              >
-                <div className="whitespace-pre-wrap text-sm text-gray-700 mb-3">{email}</div>
-                <div className="flex gap-2">
+      {/* Output Email */}
+      {generatedEmail && (
+        <div className="bg-white border border-gray-300 p-4 rounded-xl shadow-md">
+          <h2 className="text-lg font-semibold mb-2">Generated Email:</h2>
+          <pre className="whitespace-pre-wrap text-sm text-gray-800">{generatedEmail}</pre>
+        </div>
+      )}
+
+      {/* Saved Emails Section */}
+      <div>
+        <h2 className="text-xl font-bold mb-3 mt-10">Saved Emails</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {savedEmails.map((email, index) => (
+            <div key={index} className="border p-4 rounded-xl shadow-sm bg-gray-100 relative">
+              {editIndex === index ? (
+                <>
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    rows={6}
+                  />
                   <button
-                    onClick={() => handleDelete(index)}
-                    className="text-sm px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                    onClick={() => handleSaveEdit(index)}
+                    className="mt-2 px-3 py-1 bg-green-600 text-white rounded-xl"
                   >
-                    Delete
+                    Save Update
                   </button>
-                  <button
-                    onClick={() => handleExportPDF(email, index)}
-                    className="text-sm px-3 py-1 bg-gray-700 text-white rounded-md hover:bg-gray-800 transition"
-                  >
-                    Export PDF
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                </>
+              ) : (
+                <>
+                  <pre className="whitespace-pre-wrap text-sm text-gray-800 mb-2">{email}</pre>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleEdit(index)}
+                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(index)}
+                      className="px-3 py-1 bg-red-600 text-white text-sm rounded-md"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => handleExportPDF(email)}
+                      className="px-3 py-1 bg-purple-600 text-white text-sm rounded-md"
+                    >
+                      Export to PDF
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
