@@ -12,6 +12,7 @@ function App() {
   const [prompt, setPrompt] = useState("");
   const [selectedEmailContent, setSelectedEmailContent] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("write");
 
   const handleViewEmail = (content) => {
     setSelectedEmailContent(content);
@@ -25,38 +26,49 @@ function App() {
 
   return (
     <div className="flex min-h-screen bg-gray-100 text-gray-800">
-      <Sidebar />
+      <Sidebar setActiveSection={setActiveSection} activeSection={activeSection} />
       <div className="flex-1 flex flex-col p-6 space-y-6">
         <header className="flex justify-between items-center mb-2">
           <h1 className="text-3xl font-bold text-gray-700">Mail Writer AI</h1>
           <div className="flex gap-3">
-            <button className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-sm font-medium rounded">
-              Login
-            </button>
-            <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded">
-              Sign Up
-            </button>
+            <button className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-sm font-medium rounded">Login</button>
+            <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded">Sign Up</button>
           </div>
         </header>
 
-        <SettingsPanel
-          tone={tone}
-          setTone={setTone}
-          language={language}
-          setLanguage={setLanguage}
-          emailType={emailType}
-          setEmailType={setEmailType}
-        />
+        {activeSection === "write" && (
+          <>
+            <SettingsPanel
+              tone={tone}
+              setTone={setTone}
+              language={language}
+              setLanguage={setLanguage}
+              emailType={emailType}
+              setEmailType={setEmailType}
+            />
 
-        <EmailOutput
-          tone={tone}
-          language={language}
-          emailType={emailType}
-          prompt={prompt}
-          setPrompt={setPrompt}
-        />
+            <EmailOutput
+              tone={tone}
+              language={language}
+              emailType={emailType}
+              prompt={prompt}
+              setPrompt={setPrompt}
+            />
+          </>
+        )}
 
-        <SavedEmails onView={handleViewEmail} />
+        {activeSection === "saved" && <SavedEmails onView={handleViewEmail} />}
+
+        {activeSection === "settings" && (
+          <SettingsPanel
+            tone={tone}
+            setTone={setTone}
+            language={language}
+            setLanguage={setLanguage}
+            emailType={emailType}
+            setEmailType={setEmailType}
+          />
+        )}
 
         <EmailModal
           isOpen={isModalOpen}
