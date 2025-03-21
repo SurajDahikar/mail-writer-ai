@@ -1,172 +1,204 @@
-import React, { useState, useEffect } from 'react';
+// src/components/EmailOutput.jsx
+import React, { useEffect, useState } from "react";
+import { jsPDF } from "jspdf";
 
 const EmailOutput = () => {
-  const [tone, setTone] = useState('');
-  const [prompt, setPrompt] = useState('');
-  const [generatedEmail, setGeneratedEmail] = useState('');
+  const [tone, setTone] = useState("formal");
+  const [prompt, setPrompt] = useState("");
+  const [output, setOutput] = useState("");
   const [savedEmails, setSavedEmails] = useState([]);
-  const [editIndex, setEditIndex] = useState(null);
-  const [editContent, setEditContent] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [editingEmailId, setEditingEmailId] = useState(null);
+  const [editedPrompt, setEditedPrompt] = useState("");
+  const [editedOutput, setEditedOutput] = useState("");
 
+  // ✅ Preload tone from localStorage when component mounts
   useEffect(() => {
-    const storedEmails = JSON.parse(localStorage.getItem('savedEmails')) || [];
-    setSavedEmails(storedEmails);
+    const settings = localStorage.getItem("mailWriterSettings");
+    if (settings) {
+      const parsedSettings = JSON.parse(settings);
+      if (parsedSettings.tone) setTone(parsedSettings.tone);
+    }
+
+    const saved = localStorage.getItem("savedEmails");
+    if (saved) {
+      setSavedEmails(JSON.parse(saved));
+    }
   }, []);
 
   const handleGenerate = () => {
-    const email = `Tone: ${tone}\nPrompt: ${prompt}\n\nDear User,\n\nThis is an AI-generated email based on the provided prompt.`;
-    setGeneratedEmail(email);
-  };
-
-  const handleSave = () => {
-    if (!generatedEmail.trim()) return;
-    const updatedEmails = [...savedEmails, generatedEmail];
-    setSavedEmails(updatedEmails);
-    localStorage.setItem('savedEmails', JSON.stringify(updatedEmails));
-    setGeneratedEmail('');
-  };
-
-  const handleDelete = (index) => {
-    const updatedEmails = [...savedEmails];
-    updatedEmails.splice(index, 1);
-    setSavedEmails(updatedEmails);
-    localStorage.setItem('savedEmails', JSON.stringify(updatedEmails));
-  };
-
-  const handleEdit = (index) => {
-    setEditIndex(index);
-    setEditContent(savedEmails[index]);
-  };
-
-  const handleSaveEdit = (index) => {
-    const updatedEmails = [...savedEmails];
-    updatedEmails[index] = editContent;
-    setSavedEmails(updatedEmails);
-    localStorage.setItem('savedEmails', JSON.stringify(updatedEmails));
-    setEditIndex(null);
-    setEditContent('');
-  };
-
-  const handleExportPDF = (emailContent) => {
-    const element = document.createElement('a');
-    const file = new Blob([emailContent], { type: 'application/pdf' });
-    element.href = URL.createObjectURL(file);
-    element.download = 'email.pdf';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    const generatedText = `Here’s a ${tone} email for the prompt: "${prompt}"\n\nLorem ipsum dolor sit amet...`;
+    setOutput(generatedText);
   };
 
   const handleClear = () => {
-    setTone('');
-    setPrompt('');
-    setGeneratedEmail('');
+    setPrompt("");
+    setOutput("");
   };
 
-  const filteredEmails = savedEmails.filter((email) =>
-    email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleSave = () => {
+    const newEmail = {
+      id: Date.now(),
+      tone,
+      prompt,
+      content: output,
+    };
+    const updatedEmails = [newEmail, ...savedEmails];
+    setSavedEmails(updatedEmails);
+    localStorage.setItem("savedEmails", JSON.stringify(updatedEmails));
+  };
+
+  const handleExport = () => {
+    const doc = new jsPDF();
+    doc.text(output || "No content to export", 10, 10);
+    doc.save("email_output.pdf");
+  };
+
+  const handleDelete = (id) => {
+    const updated = savedEmails.filter((email) => email.id !== id);
+    setSavedEmails(updated);
+    localStorage.setItem("savedEmails", JSON.stringify(updated));
+  };
+
+  const handleEdit = (email) => {
+    setEditingEmailId(email.id);
+    setEditedPrompt(email.prompt);
+    setEditedOutput(email.content);
+  };
+
+  const handleSaveEdit = () => {
+    const updated = savedEmails.map((email) =>
+      email.id === editingEmailId
+        ? { ...email, prompt: editedPrompt, content: editedOutput }
+        : email
+    );
+    setSavedEmails(updated);
+    localStorage.setItem("savedEmails", JSON.stringify(updated));
+    setEditingEmailId(null);
+  };
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto">
-      {/* Input Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="p-4 bg-white rounded-2xl shadow-lg border border-gray-200 dark:bg-gray-900">
+      {/* Prompt Input */}
+      <div className="mb-4">
+        <label className="block text-sm text-gray-700 dark:text-gray-200 mb-1">
+          Enter your prompt / email subject
+        </label>
         <input
-          type="text"
-          placeholder="Enter tone (e.g., Formal)"
-          className="p-3 border border-gray-300 rounded-xl w-full"
-          value={tone}
-          onChange={(e) => setTone(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Enter prompt"
-          className="p-3 border border-gray-300 rounded-xl w-full"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
+          className="w-full p-2 border rounded-md border-gray-300 focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-white"
+          placeholder="Type your prompt here..."
         />
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-4">
-        <button onClick={handleGenerate} className="px-4 py-2 bg-green-600 text-white rounded-xl">Generate</button>
-        <button onClick={handleSave} className="px-4 py-2 bg-gray-700 text-white rounded-xl">Save</button>
-        <button onClick={handleClear} className="px-4 py-2 bg-red-500 text-white rounded-xl">Clear</button>
+      <div className="flex gap-3 mb-4 flex-wrap">
+        <button
+          onClick={handleGenerate}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+        >
+          Generate
+        </button>
+        <button
+          onClick={handleClear}
+          className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+        >
+          Clear
+        </button>
+        <button
+          onClick={handleSave}
+          className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+        >
+          Save
+        </button>
+        <button
+          onClick={handleExport}
+          className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+        >
+          Export to PDF
+        </button>
       </div>
 
-      {/* Output Email */}
-      {generatedEmail && (
-        <div className="bg-white border border-gray-300 p-4 rounded-xl shadow-md">
-          <h2 className="text-lg font-semibold mb-2">Generated Email:</h2>
-          <pre className="whitespace-pre-wrap text-sm text-gray-800">{generatedEmail}</pre>
-        </div>
-      )}
-
-      {/* Search Box */}
-      <div className="mt-8">
-        <input
-          type="text"
-          placeholder="🔍 Search saved emails..."
-          className="w-full p-3 border border-gray-300 rounded-xl"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+      {/* Generated Output */}
+      <div className="mb-6">
+        <h3 className="text-md font-semibold mb-2 text-gray-800 dark:text-white">
+          Generated Email
+        </h3>
+        <textarea
+          value={output}
+          readOnly
+          rows={8}
+          className="w-full p-3 border border-gray-300 rounded-lg dark:bg-gray-800 dark:text-white"
         />
       </div>
 
       {/* Saved Emails Section */}
-      <div>
-        <h2 className="text-xl font-bold mb-3 mt-6">Saved Emails</h2>
-        {filteredEmails.length === 0 ? (
-          <p className="text-gray-500 text-sm">No matching emails found.</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredEmails.map((email, index) => (
-              <div key={index} className="border p-4 rounded-xl shadow-sm bg-gray-100 relative">
-                {editIndex === index ? (
-                  <>
-                    <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                      rows={6}
-                    />
+      <div className="mt-6">
+        <h2 className="text-lg font-bold mb-4 text-gray-800 dark:text-white">
+          Saved Emails
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {savedEmails.map((email) => (
+            <div
+              key={email.id}
+              className="border border-gray-300 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 dark:border-gray-700"
+            >
+              {editingEmailId === email.id ? (
+                <>
+                  <input
+                    value={editedPrompt}
+                    onChange={(e) => setEditedPrompt(e.target.value)}
+                    className="w-full mb-2 p-2 border rounded dark:bg-gray-700 dark:text-white"
+                  />
+                  <textarea
+                    value={editedOutput}
+                    onChange={(e) => setEditedOutput(e.target.value)}
+                    className="w-full mb-2 p-2 border rounded dark:bg-gray-700 dark:text-white"
+                    rows={4}
+                  />
+                  <button
+                    onClick={handleSaveEdit}
+                    className="bg-green-600 text-white px-3 py-1 rounded mr-2"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingEmailId(null)}
+                    className="bg-gray-600 text-white px-3 py-1 rounded"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                    <strong>Tone:</strong> {email.tone}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-white">
+                    {email.prompt}
+                  </p>
+                  <p className="text-sm mt-2 text-gray-700 dark:text-gray-200">
+                    {email.content}
+                  </p>
+                  <div className="mt-2 flex gap-2">
                     <button
-                      onClick={() => handleSaveEdit(index)}
-                      className="mt-2 px-3 py-1 bg-green-600 text-white rounded-xl"
+                      onClick={() => handleEdit(email)}
+                      className="bg-yellow-500 text-white px-3 py-1 rounded"
                     >
-                      Save Update
+                      Edit
                     </button>
-                  </>
-                ) : (
-                  <>
-                    <pre className="whitespace-pre-wrap text-sm text-gray-800 mb-2">{email}</pre>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => handleEdit(index)}
-                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(index)}
-                        className="px-3 py-1 bg-red-600 text-white text-sm rounded-md"
-                      >
-                        Delete
-                      </button>
-                      <button
-                        onClick={() => handleExportPDF(email)}
-                        className="px-3 py-1 bg-purple-600 text-white text-sm rounded-md"
-                      >
-                        Export to PDF
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+                    <button
+                      onClick={() => handleDelete(email.id)}
+                      className="bg-red-600 text-white px-3 py-1 rounded"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
