@@ -11,7 +11,6 @@ const EmailOutput = () => {
   const [editedPrompt, setEditedPrompt] = useState("");
   const [editedOutput, setEditedOutput] = useState("");
 
-  // ✅ Preload tone from localStorage when component mounts
   useEffect(() => {
     const settings = localStorage.getItem("mailWriterSettings");
     if (settings) {
@@ -117,6 +116,13 @@ const EmailOutput = () => {
         >
           Export to PDF
         </button>
+      </div>
+
+      {/* 🌟 Selected Tone Display Block */}
+      <div className="mb-4">
+        <div className="bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 px-4 py-2 rounded-lg inline-block text-sm font-semibold">
+          ✨ Selected Tone: <span className="capitalize">{tone}</span>
+        </div>
       </div>
 
       {/* Generated Output */}

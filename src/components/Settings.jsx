@@ -25,23 +25,44 @@ export default function Settings({ tone, setTone }) {
     alert("Preferences saved successfully ✅");
   };
 
+  const toneOptions = [
+    "Professional",
+    "Friendly",
+    "Persuasive",
+    "Conversational",
+    "Humorous",
+    "Apologetic",
+    "Appreciative",
+    "Informative",
+    "Urgent",
+    "Concise",
+  ];
+
+  const emailStyles = [
+    { value: "", label: "Select Style" },
+    { value: "professional", label: "Professional" },
+    { value: "casual", label: "Casual" },
+    { value: "creative", label: "Creative" },
+  ];
+
   return (
-    <div className="bg-white p-4 rounded-2xl shadow border border-gray-200 mb-6 dark:bg-gray-900">
+    <div className="bg-white p-4 rounded-2xl shadow border border-gray-200 mb-6 dark:bg-gray-900 dark:border-gray-700">
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        Select Tone / Style
+        Select Email Tone / Style
       </label>
       <select
         value={tone}
         onChange={(e) => setTone(e.target.value)}
         className="w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-400 dark:bg-gray-800 dark:text-white"
       >
-        <option value="formal">Formal</option>
-        <option value="informal">Informal</option>
-        <option value="friendly">Friendly</option>
-        <option value="persuasive">Persuasive</option>
+        {toneOptions.map((option) => (
+          <option key={option} value={option.toLowerCase()}>
+            {option}
+          </option>
+        ))}
       </select>
 
-      {/* New Email Style Dropdown */}
+      {/* Email Style Dropdown */}
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mt-4 mb-2">
         Select Email Writing Style
       </label>
@@ -50,10 +71,11 @@ export default function Settings({ tone, setTone }) {
         onChange={(e) => setEmailStyle(e.target.value)}
         className="w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-400 dark:bg-gray-800 dark:text-white"
       >
-        <option value="">Select Style</option>
-        <option value="professional">Professional</option>
-        <option value="casual">Casual</option>
-        <option value="creative">Creative</option>
+        {emailStyles.map((style) => (
+          <option key={style.value} value={style.value}>
+            {style.label}
+          </option>
+        ))}
       </select>
 
       {/* Autosave Toggle */}
